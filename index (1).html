@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Agro Pro - agrodados</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a3a1a">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root {
+            --soil:    #1a3a1a;
+            --leaf:    #2d6a2d;
+            --sprout:  #4caf50;
+            --harvest: #a5c95a;
+            --straw:   #f5f0e8;
+            --cream:   #fffdf7;
+            --ink:     #1c2b1c;
+            --muted:   #6b7c6b;
+            --border:  #dde8d0;
+            --gold:    #c8a84b;
+            --danger:  #c0392b;
+            --edit:    #e67e22;
+            --whatsapp:#25d366;
+            --shadow-sm: 0 2px 8px rgba(26,58,26,0.08);
+            --shadow-md: 0 6px 24px rgba(26,58,26,0.12);
+            --shadow-lg: 0 16px 48px rgba(26,58,26,0.16);
+            --r: 16px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--straw);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 0 40px;
+        }
+
+        /* ── HEADER ── */
+        .app-header {
+            width: 100%;
+            background: var(--soil);
+            padding: 28px 24px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(77,175,80,0.12) 0%, transparent 60%),
+                radial-gradient(circle at 80% 20%, rgba(165,201,90,0.08) 0%, transparent 50%);
+        }
+
+        .header-badge {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--harvest);
+            background: rgba(165,201,90,0.15);
+            border: 1px solid rgba(165,201,90,0.3);
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .app-header h1 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 2rem;
+            color: #fff;
+            letter-spacing: -0.02em;
+            line-height: 1;
+            position: relative;
+        }
+
+        .app-header h1 em {
+            font-style: italic;
+            color: var(--harvest);
+        }
+
+        .header-sub {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.45);
+            margin-top: 6px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            position: relative;
+        }
+
+        /* decorative leaf */
+        .leaf-deco {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 3rem;
+            opacity: 0.12;
+            user-select: none;
+        }
+
+        /* ── CONTAINER ── */
+        .container {
+            width: 100%;
+            max-width: 480px;
+            padding: 20px 16px 0;
+        }
+
+        /* ── CARD ── */
+        .card {
+            background: var(--cream);
+            border-radius: var(--r);
+            box-shadow: var(--shadow-md);
+            margin-bottom: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            animation: slideUp 0.4s ease both;
+        }
+
+        .card:nth-child(2) { animation-delay: 0.08s; }
+        .card:nth-child(3) { animation-delay: 0.16s; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .card-header {
+            padding: 16px 20px;
+            background: linear-gradient(135deg, var(--soil) 0%, var(--leaf) 100%);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-header-icon {
+            width: 34px;
+            height: 34px;
+            background: rgba(255,255,255,0.12);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .card-header h3 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.05rem;
+            color: #fff;
+            font-weight: 400;
+            letter-spacing: -0.01em;
+            border: none;
+            padding: 0;
+            text-align: left;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        /* ── FORM ── */
+        .input-group {
+            margin-bottom: 14px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 13px 15px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem;
+            color: var(--ink);
+            background: var(--cream);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+            appearance: none;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--sprout);
+            box-shadow: 0 0 0 3px rgba(76,175,80,0.12);
+        }
+
+        input::placeholder { color: #b0bdb0; }
+
+        .qty-row, .loc-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 18px 0;
+        }
+
+        /* ── BUTTONS ── */
+        .btn-principal {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--leaf) 0%, var(--sprout) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 14px rgba(45,106,45,0.3);
+        }
+
+        .btn-principal:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(45,106,45,0.4);
+        }
+
+        .btn-principal:active { transform: translateY(0); }
+
+        .btn-principal.editando {
+            background: linear-gradient(135deg, #b8620a 0%, var(--edit) 100%);
+            box-shadow: 0 4px 14px rgba(230,126,34,0.35);
+        }
+
+        /* ── ACTION BUTTONS ── */
+        .actions-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+        .btn-action {
+            padding: 11px 6px;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 700;
+            font-size: 0.7rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .btn-action:hover { transform: translateY(-2px); }
+        .btn-action .btn-icon { font-size: 1.1rem; }
+
+        .btn-zap  { background: linear-gradient(135deg, #128c7e, var(--whatsapp)); }
+        .btn-pdf  { background: linear-gradient(135deg, #991f1f, #e53935); }
+        .btn-sync { background: linear-gradient(135deg, #1565c0, #1976d2); }
+
+        /* ── STATUS ── */
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 20px;
+            letter-spacing: 0.04em;
+            margin-bottom: 16px;
+            transition: all 0.3s;
+        }
+
+        .status-pill.waiting  { background: #f0f0f0; color: #888; }
+        .status-pill.loading  { background: #fff8e1; color: #f57c00; }
+        .status-pill.ok       { background: #e8f5e9; color: #2e7d32; }
+        .status-pill.error    { background: #ffebee; color: #c62828; }
+
+        /* ── TABLE ── */
+        .table-wrapper { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            min-width: 320px;
+        }
+
+        thead tr {
+            background: var(--soil);
+        }
+
+        th {
+            padding: 10px 10px;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            text-align: left;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
+        }
+
+        tbody tr:hover { background: #f4faf4; }
+        tbody tr:last-child { border-bottom: none; }
+
+        td {
+            padding: 11px 10px;
+            color: var(--ink);
+            vertical-align: middle;
+        }
+
+        td .prod-name { font-weight: 600; font-size: 0.82rem; }
+        td .prod-route { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+        td .qty-val { font-weight: 700; font-size: 0.85rem; }
+        td .qty-unit { font-size: 0.68rem; color: var(--muted); }
+        td .date-val { font-weight: 600; font-size: 0.78rem; color: var(--soil); }
+
+        /* ── ROW ACTIONS ── */
+        .row-actions { display: flex; gap: 5px; }
+
+        .btn-row {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s, opacity 0.15s;
+            flex-shrink: 0;
+        }
+
+        .btn-row:hover { transform: scale(1.12); }
+        .btn-row.edit { background: var(--edit); }
+        .btn-row.del  { background: var(--danger); }
+
+        /* empty state */
+        .empty-state {
+            text-align: center;
+            padding: 36px 20px;
+            color: var(--muted);
+        }
+        .empty-state .es-icon { font-size: 2.5rem; margin-bottom: 8px; opacity: 0.4; }
+        .empty-state p { font-size: 0.85rem; }
+
+        /* ── FOOTER ── */
+        .footer {
+            text-align: center;
+            margin-top: 24px;
+            padding: 0 16px;
+        }
+
+        .footer-line {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin-bottom: 12px;
+        }
+
+        .footer p {
+            font-size: 0.72rem;
+            color: var(--muted);
+            letter-spacing: 0.05em;
+        }
+
+        .footer strong { color: var(--leaf); }
+
+        /* ── CANCEL EDIT BUTTON ── */
+        .btn-cancel {
+            width: 100%;
+            padding: 10px;
+            background: transparent;
+            color: var(--muted);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: all 0.2s;
+            display: none;
+        }
+
+        .btn-cancel:hover { border-color: var(--danger); color: var(--danger); }
+        .btn-cancel.visible { display: block; }
+
+        /* spinner */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { display: inline-block; width: 10px; height: 10px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+    <div class="header-badge">Sistema de Controle</div>
+    <h1>Agro <em>Pro</em></h1>
+    <p class="header-sub">Gestão de Estoque Rural</p>
+    <div class="leaf-deco">🌿</div>
+</header>
+
+<div class="container">
+
+    <!-- FORM CARD -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-header-icon" id="headerIcon">📝</div>
+            <h3 id="tituloForm">Registro de Saída</h3>
+        </div>
+        <div class="card-body">
+            <form id="formSaida">
+                <input type="hidden" id="editId">
+
+                <div class="input-group">
+                    <label>Produto / Insumo</label>
+                    <input type="text" id="produto" placeholder="Ex: Ureia, Herbicida..." required>
+                </div>
+
+                <div class="qty-row">
+                    <div class="input-group">
+                        <label>Quantidade</label>
+                        <input type="number" id="quantidade" step="0.01" placeholder="0" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Unidade</label>
+                        <select id="unidade">
+                            <option value="Bag">Bag</option>
+                            <option value="L">Litros</option>
+                            <option value="Kg">Quilos</option>
+                            <option value="Saco">Sacos</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="loc-row">
+                    <div class="input-group">
+                        <label>Origem</label>
+                        <input type="text" id="origem" placeholder="Depósito..." required>
+                    </div>
+                    <div class="input-group">
+                        <label>Destino</label>
+                        <input type="text" id="destino" placeholder="Talhão..." required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Data da Saída</label>
+                    <input type="date" id="dataSaida" required>
+                </div>
+
+                <div class="divider"></div>
+
+                <button type="submit" id="btnSubmit" class="btn-principal">Salvar Registro</button>
+                <button type="button" id="btnCancel" class="btn-cancel" onclick="cancelarEdicao()">✕ Cancelar edição</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- HISTORY CARD -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-header-icon">📊</div>
+            <h3>Histórico na Nuvem</h3>
+        </div>
+        <div class="card-body">
+            <div id="statusSync" class="status-pill waiting">
+                <span>Aguardando conexão</span>
+            </div>
+
+            <div class="actions-row">
+                <button class="btn-action btn-zap" onclick="exportarZap()">
+                    <span class="btn-icon">💬</span> WhatsApp
+                </button>
+                <button class="btn-action btn-pdf" onclick="exportarPDF()">
+                    <span class="btn-icon">📄</span> PDF
+                </button>
+                <button class="btn-action btn-sync" onclick="carregarDados()">
+                    <span class="btn-icon">🔄</span> Atualizar
+                </button>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Produto</th>
+                            <th>Qtd</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaCorpo">
+                        <tr>
+                            <td colspan="4">
+                                <div class="empty-state">
+                                    <div class="es-icon">🌱</div>
+                                    <p>Nenhum registro ainda</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="container">
+    <div class="footer">
+        <div class="footer-line"></div>
+        <p>Desenvolvido por <strong>João Divino Barbosa</strong></p>
+    </div>
+</div>
+
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+
+    const SB_URL = "https://txhsvqukuyiatrtapxji.supabase.co";
+    const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4aHN2cXVrdXlpYXRydGFweGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5Njk5NDgsImV4cCI6MjA5MDU0NTk0OH0.QJ2Zk_xdmjYE8VhGfhmuqdtPMbdSxWJdlllaRVgpRyw";
+
+    const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+    const form = document.getElementById('formSaida');
+    const tabelaCorpo = document.getElementById('tabelaCorpo');
+    const statusSync = document.getElementById('statusSync');
+
+    function setStatus(state, msg) {
+        statusSync.className = 'status-pill ' + state;
+        statusSync.innerHTML = (state === 'loading' ? '<span class="spinner"></span>' : '') + `<span>${msg}</span>`;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('dataSaida').valueAsDate = new Date();
+        carregarDados();
+    });
+
+    async function carregarDados() {
+        setStatus('loading', 'Sincronizando...');
+        try {
+            const { data, error } = await supabaseClient
+                .from('saidas_estoque')
+                .select('*')
+                .order('data_saida', { ascending: false });
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                tabelaCorpo.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="es-icon">🌱</div><p>Nenhum registro ainda</p></div></td></tr>`;
+            } else {
+                tabelaCorpo.innerHTML = data.map(item => {
+                    const partes = item.data_saida.split('-');
+                    const dataFmt = `${partes[2]}/${partes[1]}`;
+                    return `
+                    <tr>
+                        <td><span class="date-val">${dataFmt}</span></td>
+                        <td>
+                            <div class="prod-name">${item.produto}</div>
+                            <div class="prod-route">${item.origem} → ${item.destino}</div>
+                        </td>
+                        <td>
+                            <div class="qty-val">${item.quantidade}</div>
+                            <div class="qty-unit">${item.unidade}</div>
+                        </td>
+                        <td>
+                            <div class="row-actions">
+                                <button class="btn-row edit" onclick="editarRegistro('${item.id}')" title="Editar">✎</button>
+                                <button class="btn-row del"  onclick="excluirRegistro('${item.id}')" title="Excluir">✕</button>
+                            </div>
+                        </td>
+                    </tr>`;
+                }).join('');
+            }
+            setStatus('ok', `Atualizado · ${data.length} registro${data.length !== 1 ? 's' : ''}`);
+        } catch (err) {
+            setStatus('error', 'Erro: ' + err.message);
+        }
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('editId').value;
+        const btn = document.getElementById('btnSubmit');
+        const registro = {
+            produto:    document.getElementById('produto').value,
+            quantidade: parseFloat(document.getElementById('quantidade').value),
+            unidade:    document.getElementById('unidade').value,
+            origem:     document.getElementById('origem').value,
+            destino:    document.getElementById('destino').value,
+            data_saida: document.getElementById('dataSaida').value
+        };
+
+        btn.textContent = 'Salvando...';
+        btn.disabled = true;
+
+        try {
+            if (id) {
+                const { error } = await supabaseClient.from('saidas_estoque').update(registro).eq('id', id);
+                if (error) throw error;
+            } else {
+                const { error } = await supabaseClient.from('saidas_estoque').insert([registro]);
+                if (error) throw error;
+            }
+            cancelarEdicao();
+            carregarDados();
+        } catch (err) {
+            alert("Erro ao salvar: " + err.message);
+        } finally {
+            btn.disabled = false;
+        }
+    });
+
+    function cancelarEdicao() {
+        form.reset();
+        document.getElementById('editId').value = '';
+        document.getElementById('dataSaida').valueAsDate = new Date();
+        document.getElementById('btnSubmit').textContent = 'Salvar Registro';
+        document.getElementById('btnSubmit').classList.remove('editando');
+        document.getElementById('tituloForm').textContent = 'Registro de Saída';
+        document.getElementById('headerIcon').textContent = '📝';
+        document.getElementById('btnCancel').classList.remove('visible');
+    }
+
+    async function excluirRegistro(id) {
+        if (confirm("Excluir permanentemente este registro?")) {
+            const { error } = await supabaseClient.from('saidas_estoque').delete().eq('id', id);
+            if (error) { alert("Erro ao excluir: " + error.message); return; }
+            carregarDados();
+        }
+    }
+
+    async function editarRegistro(id) {
+        const { data, error } = await supabaseClient.from('saidas_estoque').select('*').eq('id', id).single();
+        if (error) { alert("Erro ao carregar: " + error.message); return; }
+        if (data) {
+            document.getElementById('produto').value    = data.produto;
+            document.getElementById('quantidade').value = data.quantidade;
+            document.getElementById('unidade').value    = data.unidade;
+            document.getElementById('origem').value     = data.origem;
+            document.getElementById('destino').value    = data.destino;
+            document.getElementById('dataSaida').value  = data.data_saida;
+            document.getElementById('editId').value     = data.id;
+            document.getElementById('btnSubmit').textContent = 'Atualizar Dados';
+            document.getElementById('btnSubmit').classList.add('editando');
+            document.getElementById('tituloForm').textContent = 'Editando Registro';
+            document.getElementById('headerIcon').textContent = '✏️';
+            document.getElementById('btnCancel').classList.add('visible');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+
+    function exportarZap() {
+        const linhas = Array.from(tabelaCorpo.rows);
+        if (linhas.length === 0 || linhas[0].cells.length === 1) { alert("Nenhum dado para exportar."); return; }
+        let msg = "*📋 RELATÓRIO AGRO PRO*\n_Controle de Estoque Rural_\n\n";
+        linhas.forEach(linha => {
+            if (linha.cells.length < 3) return;
+            const data = linha.cells[0].innerText.trim();
+            const prod = linha.cells[1].innerText.replace(/\n/g, ' – ').trim();
+            const qtd  = linha.cells[2].innerText.replace(/\n/g, ' ').trim();
+            msg += `📅 ${data}  |  ${prod}  |  ${qtd}\n`;
+        });
+        msg += `\n_Gerado em ${new Date().toLocaleDateString('pt-BR')}_`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+    }
+
+    async function exportarPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const { data, error } = await supabaseClient.from('saidas_estoque').select('*').order('data_saida', { ascending: false });
+
+        if (error) { alert("Erro ao gerar PDF: " + error.message); return; }
+        if (!data || data.length === 0) { alert("Nenhum dado para exportar."); return; }
+
+        // Header bar
+        doc.setFillColor(26, 58, 26);
+        doc.rect(0, 0, 210, 42, 'F');
+
+        // accent stripe
+        doc.setFillColor(76, 175, 80);
+        doc.rect(0, 38, 210, 4, 'F');
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(20);
+        doc.setFont("helvetica", "bold");
+        doc.text("AGRO PRO", 14, 18);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(165, 201, 90);
+        doc.text("RELATÓRIO DE MOVIMENTAÇÃO DE ESTOQUE", 14, 26);
+
+        // meta
+        doc.setTextColor(80, 80, 80);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.text("Responsável:", 14, 54);
+        doc.setFont("helvetica", "normal");
+        doc.text("João Divino Barbosa", 50, 54);
+        doc.setFont("helvetica", "bold");
+        doc.text("Emitido em:", 14, 61);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${new Date().toLocaleDateString('pt-BR')}  ${new Date().toLocaleTimeString('pt-BR')}`, 50, 61);
+        doc.setFont("helvetica", "bold");
+        doc.text("Total de registros:", 14, 68);
+        doc.setFont("helvetica", "normal");
+        doc.text(String(data.length), 62, 68);
+
+        const rows = data.map(i => [
+            i.data_saida.split('-').reverse().join('/'),
+            i.produto,
+            `${i.quantidade} ${i.unidade}`,
+            i.origem,
+            i.destino
+        ]);
+
+        doc.autoTable({
+            head: [['DATA', 'PRODUTO', 'QTD / UNID', 'ORIGEM', 'DESTINO']],
+            body: rows,
+            startY: 76,
+            theme: 'striped',
+            styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 5 },
+            headStyles: { fillColor: [26, 58, 26], textColor: [255,255,255], fontStyle: 'bold', fontSize: 8 },
+            alternateRowStyles: { fillColor: [244, 250, 244] },
+            didDrawPage: (d) => {
+                doc.setFontSize(7.5);
+                doc.setTextColor(160);
+                doc.text("Agro Pro — Sistema de Controle de Estoque Rural", 14, 290);
+                doc.text(`Pág. ${d.pageNumber}`, 196, 290, { align: 'right' });
+            }
+        });
+
+        doc.save(`Relatorio_Agro_${new Date().getTime()}.pdf`);
+    }
+</script>
+</body>
+</html>
