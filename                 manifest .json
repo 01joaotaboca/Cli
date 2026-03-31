@@ -1,0 +1,16 @@
+{
+  "name": "Agro na Palma da Mão",
+  "short_name": "AgroPro",
+  "description": "Sistema de Gestão Agrícola - João Divino Barbosa",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f0f2f5",
+  "theme_color": "#2e7d32",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2377/2377810.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
