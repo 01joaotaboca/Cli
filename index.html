@@ -259,6 +259,12 @@
 
         doc.save(`Relatorio_Agro_${new Date().getTime()}.pdf`);
     }
+</<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log("Service Worker Registrado!"));
+  }
 </script>
+
 </body>
 </html>
