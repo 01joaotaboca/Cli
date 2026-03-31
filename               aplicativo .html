@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Agro Pro - agrodados</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2e7d32">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root { --primary: #2e7d32; --bg: #f0f2f5; --card: #ffffff; --danger: #c62828; --edit: #ffa000; --whatsapp: #25d366; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 480px; }
+        .header-title { color: var(--primary); text-align: center; font-size: 1.6rem; margin: 15px 0; font-weight: 800; text-transform: uppercase; }
+        .card { background: var(--card); padding: 20px; border-radius: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        h3 { color: var(--primary); text-align: center; margin-top: 0; font-size: 1.1rem; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.85rem; color: #444; }
+        input, select { width: 100%; padding: 14px; border: 1.5px solid #ddd; border-radius: 12px; box-sizing: border-box; font-size: 16px; }
+        .qty-row, .loc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-principal { width: 100%; padding: 16px; background-color: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-principal.editando { background-color: var(--edit); }
+        .actions-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 20px 0; }
+        .btn-action { padding: 12px 5px; border: none; border-radius: 10px; color: white; font-weight: bold; font-size: 0.75rem; cursor: pointer; }
+        .btn-whatsapp { background-color: var(--whatsapp); }
+        .btn-pdf { background-color: #e53935; }
+        .btn-refresh { background-color: #1976d2; }
+        .table-container { overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        th, td { text-align: left; padding: 12px 6px; border-bottom: 1px solid #f0f0f0; }
+        .btn-tabela { border: none; padding: 8px; border-radius: 8px; color: white; cursor: pointer; margin-right: 4px; }
+        .btn-edit { background-color: var(--edit); }
+        .btn-del { background-color: var(--danger); }
+        .status-sync { text-align: center; font-size: 0.75rem; color: #888; margin-bottom: 5px; font-weight: bold; }
+        .footer-sig { text-align: center; font-size: 0.75rem; color: #666; margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header-title">Agro na Palma da Mão</div>
+    <div class="card">
+        <h3 id="tituloForm">📝 Registro de Saída</h3>
+        <form id="formSaida">
+            <input type="hidden" id="editId">
+            <div class="input-group">
+                <label>Produto / Insumo</label>
+                <input type="text" id="produto" placeholder="Ex: Ureia" required>
+            </div>
+            <div class="qty-row">
+                <div class="input-group">
+                    <label>Quantidade</label>
+                    <input type="number" id="quantidade" step="0.01" required>
+                </div>
+                <div class="input-group">
+                    <label>Unidade</label>
+                    <select id="unidade">
+                        <option value="Bag">Bag</option>
+                        <option value="L">Litros</option>
+                        <option value="Kg">Quilos</option>
+                        <option value="Saco">Sacos</option>
+                    </select>
+                </div>
+            </div>
+            <div class="loc-row">
+                <div class="input-group"><label>Origem</label><input type="text" id="origem" required></div>
+                <div class="input-group"><label>Destino</label><input type="text" id="destino" required></div>
+            </div>
+            <div class="input-group">
+                <label>Data da Saída</label>
+                <input type="date" id="dataSaida" required>
+            </div>
+            <button type="submit" id="btnSubmit" class="btn-principal">SALVAR NO SUPABASE</button>
+        </form>
+    </div>
+    <div class="card">
+        <h3>📊 Histórico na Nuvem</h3>
+        <div class="status-sync" id="statusSync">Aguardando...</div>
+        <div class="actions-grid">
+            <button class="btn-action btn-whatsapp" onclick="exportarZap()">WhatsApp</button>
+            <button class="btn-action btn-pdf" onclick="exportarPDF()">PDF</button>
+            <button class="btn-action btn-refresh" onclick="carregarDados()">Atualizar</button>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead><tr><th>Data</th><th>Produto</th><th>Qtd</th><th>Ações</th></tr></thead>
+                <tbody id="tabelaCorpo"></tbody>
+            </table>
+        </div>
+    </div>
+    <div class="footer-sig">Desenvolvido por : João Divino Barbosa</div>
+</div>
+
+<script>
+    // Registro do Service Worker para funcionar Offline
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+    }
+
+    const SB_URL = "https://txhsvqukuyiatrtapxji.supabase.co";
+    const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4aHN2cXVrdXlpYXRydGFweGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5Njk5NDgsImV4cCI6MjA5MDU0NTk0OH0.QJ2Zk_xdmjYE8VhGfhmuqdtPMbdSxWJdlllaRVgpRyw";
+
+    const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+    const form = document.getElementById('formSaida');
+    const tabelaCorpo = document.getElementById('tabelaCorpo');
+    const statusSync = document.getElementById('statusSync');
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('dataSaida').valueAsDate = new Date();
+        carregarDados();
+    });
+
+    async function carregarDados() {
+        statusSync.innerText = "⏳ Sincronizando...";
+        statusSync.style.color = "orange";
+        try {
+            const { data, error } = await supabaseClient
+                .from('saidas_estoque')
+                .select('*')
+                .order('data_saida', { ascending: false });
+            if (error) throw error;
+            tabelaCorpo.innerHTML = data.map(item => `
+                <tr>
+                    <td>${item.data_saida.split('-').reverse().slice(0,2).join('/')}</td>
+                    <td><strong>${item.produto}</strong><br><small>${item.origem} ➔ ${item.destino}</small></td>
+                    <td>${item.quantidade}<br><small>${item.unidade}</small></td>
+                    <td style="white-space: nowrap">
+                        <button class="btn-tabela btn-edit" onclick="editarRegistro('${item.id}')">✎</button>
+                        <button class="btn-tabela btn-del" onclick="excluirRegistro('${item.id}')">✕</button>
+                    </td>
+                </tr>
+            `).join('');
+            statusSync.innerText = "✅ Nuvem Atualizada";
+            statusSync.style.color = "green";
+        } catch (err) {
+            statusSync.innerText = "❌ Erro: " + err.message;
+            statusSync.style.color = "red";
+        }
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('editId').value;
+        const registro = {
+            produto: document.getElementById('produto').value,
+            quantidade: parseFloat(document.getElementById('quantidade').value),
+            unidade: document.getElementById('unidade').value,
+            origem: document.getElementById('origem').value,
+            destino: document.getElementById('destino').value,
+            data_saida: document.getElementById('dataSaida').value
+        };
+        try {
+            if (id) {
+                const { error } = await supabaseClient.from('saidas_estoque').update(registro).eq('id', id);
+                if (error) throw error;
+            } else {
+                const { error } = await supabaseClient.from('saidas_estoque').insert([registro]);
+                if (error) throw error;
+            }
+            form.reset();
+            document.getElementById('editId').value = "";
+            document.getElementById('btnSubmit').innerText = "SALVAR NO SUPABASE";
+            document.getElementById('btnSubmit').classList.remove('editando');
+            document.getElementById('tituloForm').innerText = "📝 Registro de Saída";
+            document.getElementById('dataSaida').valueAsDate = new Date();
+            carregarDados();
+        } catch (err) {
+            alert("Erro ao salvar: " + err.message);
+        }
+    });
+
+    async function excluirRegistro(id) {
+        if (confirm("Excluir permanentemente?")) {
+            const { error } = await supabaseClient.from('saidas_estoque').delete().eq('id', id);
+            if (error) { alert("Erro ao excluir: " + error.message); return; }
+            carregarDados();
+        }
+    }
+
+    async function editarRegistro(id) {
+        const { data, error } = await supabaseClient.from('saidas_estoque').select('*').eq('id', id).single();
+        if (error) { alert("Erro ao carregar: " + error.message); return; }
+        if (data) {
+            document.getElementById('produto').value = data.produto;
+            document.getElementById('quantidade').value = data.quantidade;
+            document.getElementById('unidade').value = data.unidade;
+            document.getElementById('origem').value = data.origem;
+            document.getElementById('destino').value = data.destino;
+            document.getElementById('dataSaida').value = data.data_saida;
+            document.getElementById('editId').value = data.id;
+            document.getElementById('btnSubmit').innerText = "ATUALIZAR DADOS";
+            document.getElementById('btnSubmit').classList.add('editando');
+            document.getElementById('tituloForm').innerText = "✏️ Editando Registro";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+
+    function exportarZap() {
+        let msg = "*RELATÓRIO AGRO PRO - Entradas e Saídas*\n\n";
+        const linhas = Array.from(tabelaCorpo.rows);
+        if (linhas.length === 0) { alert("Nenhum dado para exportar."); return; }
+        linhas.forEach(linha => {
+            msg += `📅 ${linha.cells[0].innerText} | ${linha.cells[1].innerText.replace('\n', ' ')} | Qtd: ${linha.cells[2].innerText.replace('\n', ' ')}\n`;
+        });
+        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+    }
+
+    async function exportarPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const { data, error } = await supabaseClient.from('saidas_estoque').select('*').order('data_saida', { ascending: false });
+        
+        if (error) { alert("Erro ao gerar PDF: " + error.message); return; }
+        if (!data || data.length === 0) { alert("Nenhum dado para exportar."); return; }
+
+        doc.setFillColor(46, 125, 50);
+        doc.rect(0, 0, 210, 40, 'F'); 
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.setFont("helvetica", "bold");
+        doc.text("RELATÓRIO DE MOVIMENTAÇÃO", 105, 20, { align: "center" });
+        doc.setFontSize(10);
+        doc.text("SISTEMA AGRO NA PALMA DA MÃO - CONTROLE DE ESTOQUE", 105, 28, { align: "center" });
+
+        doc.setTextColor(60, 60, 60);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text("Responsável :", 14, 50);
+        doc.setFont("helvetica", "normal");
+        doc.text("João Divino Barbosa ", 55, 50);
+        doc.setFont("helvetica", "bold");
+        doc.text("Data de Emissão:", 14, 56);
+        doc.setFont("helvetica", "normal");
+        doc.text(new Date().toLocaleDateString('pt-BR') + " " + new Date().toLocaleTimeString('pt-BR'), 55, 56);
+
+        const rows = data.map(i => [
+            i.data_saida.split('-').reverse().join('/'), 
+            i.produto, 
+            `${i.quantidade} ${i.unidade}`,
+            i.origem, 
+            i.destino
+        ]);
+
+        doc.autoTable({
+            head: [['DATA', 'PRODUTO', 'QTD/UNID', 'ORIGEM', 'DESTINO']],
+            body: rows,
+            startY: 65,
+            theme: 'striped',
+            headStyles: { fillColor: [46, 125, 50] },
+            didDrawPage: function (data) {
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                doc.text("Página " + data.pageNumber, 190, 285);
+                doc.text("Desenvolvido por João Divino Barbosa", 14, 285);
+            }
+        });
+
+        doc.save(`Relatorio_Agro_${new Date().getTime()}.pdf`);
+    }
+</script>
+</body>
+</html>
